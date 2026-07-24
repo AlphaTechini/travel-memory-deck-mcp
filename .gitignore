@@ -1,0 +1,27 @@
+node_modules/
+dist/
+
+# Secrets and local environment files
+.env
+.env.*
+!.env.example
+
+# Local cloud and test artifacts
+.gcloud/
+coverage/
+tmp/
+temp/
+
+# Logs and build metadata
+*.log
+*.tsbuildinfo
+pnpm-debug.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Operating system and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

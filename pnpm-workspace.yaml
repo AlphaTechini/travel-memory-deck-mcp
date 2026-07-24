@@ -1,0 +1,12 @@
+allowBuilds:
+  esbuild: true
+  protobufjs: false
+minimumReleaseAgeExclude:
+  - hono@4.12.32
+overrides:
+  fast-uri: 3.1.4
+  hono: 4.12.32
+  express-rate-limit: 8.6.0
+  ip-address: 10.2.0
+  uuid: 11.1.1
+  '@hono/node-server': 2.0.10
