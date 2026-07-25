@@ -4,15 +4,15 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 
 import { MarketplaceIdentityNotConfiguredError, requireMarketplaceIdentity } from "./auth/marketplace-identity.js";
 import type { AppConfig } from "./config.js";
+import { parseDeckRequest } from "./mcp/deck-request.js";
 import { createMcpServer } from "./mcp/tools.js";
+import {
+	PaymentChallengeError,
+	PaymentReuseError,
+	PaymentSettlementError
+} from "./payments/service.js";
 import type { AppServices } from "./services.js";
-
-function assertAllowedOrigin(request: FastifyRequest, config: AppConfig): void {
-	const origin = request.headers.origin;
-	if (origin && !config.allowedOrigins.has(origin)) {
-		throw new Error("Origin is not allowed.");
-	}
-}
+import type { DeckRequest } from "./types.js";
 
 export function createApp(config: AppConfig, services: AppServices): FastifyInstance {
 	const app = Fastify({
@@ -21,14 +21,36 @@ export function createApp(config: AppConfig, services: AppServices): FastifyInst
 	});
 
 	app.get("/health", async () => ({ status: "ok" }));
+	app.addHook("onReady", async () => services.payments.initialize());
 
 	app.route({
 		method: ["GET", "POST", "DELETE"],
 		url: "/mcp",
 		handler: async (request, reply) => {
-			assertAllowedOrigin(request, config);
 			const identity = await requireMarketplaceIdentity(request);
-			const server = createMcpServer({ services, identity });
+			let paymentId: string | undefined;
+			let settlementHeaders: Record<string, string> = {};
+			const deckRequest = getValidCreateDeckRequest(request.body);
+			if (deckRequest) {
+				try {
+					const payment = await services.payments.authorize(request, identity, deckRequest);
+					paymentId = payment.id;
+					settlementHeaders = payment.settlementHeaders;
+				} catch (error) {
+					if (error instanceof PaymentChallengeError || error instanceof PaymentSettlementError) {
+						for (const [name, value] of Object.entries(error.response.headers)) {
+							reply.header(name, value);
+						}
+						return reply.code(error.response.status).send(error.response.body);
+					}
+					throw error;
+				}
+			}
+
+			for (const [name, value] of Object.entries(settlementHeaders)) {
+				reply.header(name, value);
+			}
+			const server = createMcpServer({ services, identity, paymentId });
 			const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
 
 			await server.connect(transport);
@@ -46,9 +68,8 @@ export function createApp(config: AppConfig, services: AppServices): FastifyInst
 		if (error instanceof MarketplaceIdentityNotConfiguredError) {
 			return reply.code(503).send({ error: "Marketplace identity verification is not configured." });
 		}
-
-		if (error instanceof Error && error.message === "Origin is not allowed.") {
-			return reply.code(403).send({ error: error.message });
+		if (error instanceof PaymentReuseError) {
+			return reply.code(409).send({ error: error.message });
 		}
 
 		app.log.error(error);
@@ -56,4 +77,18 @@ export function createApp(config: AppConfig, services: AppServices): FastifyInst
 	});
 
 	return app;
+}
+
+function getValidCreateDeckRequest(body: unknown): DeckRequest | null {
+	if (typeof body !== "object" || body === null || Array.isArray(body)) {
+		return null;
+	}
+
+	const message = body as { method?: unknown; params?: unknown };
+	if (message.method !== "tools/call" || typeof message.params !== "object" || message.params === null) {
+		return null;
+	}
+
+	const params = message.params as { name?: unknown; arguments?: unknown };
+	return params.name === "create_travel_memory_deck" ? parseDeckRequest(params.arguments) : null;
 }

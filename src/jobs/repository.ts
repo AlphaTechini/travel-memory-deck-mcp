@@ -26,23 +26,34 @@ export class DeckJobRepository {
 	async ensureIndexes(): Promise<void> {
 		await Promise.all([
 			this.collection.createIndex({ ownerId: 1, _id: 1 }),
+			this.collection.createIndex({ paymentId: 1 }, { unique: true, sparse: true }),
 			this.collection.createIndex({ purgeAt: 1 }, { expireAfterSeconds: 0 })
 		]);
 	}
 
-	async create(ownerId: string, request: DeckRequest): Promise<DeckJob> {
+	async createPaid(ownerId: string, request: DeckRequest, paymentId: string): Promise<DeckJob> {
 		const createdAt = new Date();
 		const document: DeckJobDocument = {
 			_id: randomUUID(),
 			ownerId,
+			paymentId,
 			request,
 			status: "queued",
 			createdAt,
 			purgeAt: new Date(createdAt.getTime() + FAILED_JOB_RETENTION_MS)
 		};
 
-		await this.collection.insertOne(document);
-		return toJob(document);
+		const result = await this.collection.findOneAndUpdate(
+			{ paymentId },
+			{ $setOnInsert: document },
+			{ upsert: true, returnDocument: "after" }
+		);
+
+		if (!result || result.ownerId !== ownerId) {
+			throw new Error("Payment authorization is already bound to a different deck job.");
+		}
+
+		return toJob(result);
 	}
 
 	async findOwned(id: string, ownerId: string): Promise<DeckJob | null> {
@@ -52,7 +63,7 @@ export class DeckJobRepository {
 
 	async claim(id: string): Promise<DeckJob | null> {
 		const document = await this.collection.findOneAndUpdate(
-			{ _id: id, status: "queued" },
+			{ _id: id, status: "queued", paymentId: { $type: "string" } },
 			{ $set: { status: "processing", startedAt: new Date() } },
 			{ returnDocument: "after" }
 		);

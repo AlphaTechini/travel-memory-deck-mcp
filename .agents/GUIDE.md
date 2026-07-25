@@ -6,9 +6,15 @@
 - MongoDB stores job status and caller ownership.
 - Google Cloud Storage stores private generated decks.
 - Deck URLs expire after 24 hours. A Cloud Task deletes the GCS object and sensitive job data at expiry.
-- Each request includes a typography-only cover and 1-20 memories. Each memory includes a title, subtext, and 1-4 HTTPS image URLs.
+- Each request includes a typography-only cover and 1-19 memories. Each memory includes a title, subtext, and 1-4 HTTPS image URLs.
 - Captions are excluded because the source requirements do not define them.
 - Source image bytes are processed in memory only. JPEG, PNG, and WebP are accepted up to 10 MiB each.
 - The renderer preserves image order and uses fixed layouts by image count.
 - Sharp creates rounded rectangular images because PptxGenJS only provides circular image rounding.
 - Marketplace identity verification must be implemented from its actual token contract. The MCP endpoint fails closed until that contract is available.
+- `create_travel_memory_deck` is the only paid MCP action. Initialization, tool discovery, and `get_travel_memory_deck` remain free.
+- x402 uses the official OKX facilitator SDK with the exact scheme and USD₮0 on X Layer. Testnet is `eip155:1952`; production is `eip155:196`.
+- The price is 1.5 USD₮0 per output slide, including the cover. Requests allow one cover plus one to nineteen memories, for two to twenty slides.
+- The API must wait for final synchronous settlement before it creates or enqueues a deck job. A facilitator result with `pending` status does not authorize work.
+- Payment records retain a hash of the payment authorization, caller binding, request fingerprint, price, and final settlement metadata for one year. The signed payment payload is not retained.
+- The x402 `payTo` address and OKX Developer Portal credentials are runtime configuration only. They must be supplied through Cloud Run configuration and secrets.

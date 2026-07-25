@@ -14,7 +14,7 @@ function createFailureMessage(error: unknown): string {
 
 export async function generateDeckJob(jobId: string, services: AppServices): Promise<void> {
 	const job = await services.jobs.claim(jobId);
-	if (!job || !job.request) {
+	if (!job || !job.request || !job.paymentId) {
 		return;
 	}
 

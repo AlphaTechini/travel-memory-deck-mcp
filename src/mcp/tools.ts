@@ -1,36 +1,16 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
+import { CreateDeckInputSchema } from "./deck-request.js";
+import { getDeckPricing } from "../payments/service.js";
 import type { AppServices } from "../services.js";
 import type { DeckRequest, MarketplaceIdentity } from "../types.js";
 
-const ImageUrlSchema = z.url().refine((value) => new URL(value).protocol === "https:", {
-	message: "Image URLs must use HTTPS."
-});
-
-const MemorySchema = z
-	.object({
-		title: z.string().trim().min(1).max(120),
-		subtext: z.string().trim().min(1).max(1_500),
-		imageUrls: z.array(ImageUrlSchema).min(1).max(4)
-	})
-	.strict();
-
-const CreateDeckInputSchema = z
-	.object({
-		cover: z
-			.object({
-				title: z.string().trim().min(1).max(160),
-				subtext: z.string().trim().min(1).max(1_000)
-			})
-			.strict(),
-		memories: z.array(MemorySchema).min(1).max(20)
-	})
-	.strict();
-
 const CreateDeckOutputSchema = z.object({
 	jobId: z.string().uuid(),
-	status: z.literal("queued")
+	status: z.literal("queued"),
+	slideCount: z.number().int().min(2).max(20),
+	priceUsd: z.string()
 });
 
 const GetDeckInputSchema = z
@@ -50,6 +30,7 @@ const GetDeckOutputSchema = z.object({
 type ToolContext = {
 	services: AppServices;
 	identity: MarketplaceIdentity;
+	paymentId?: string;
 };
 
 function createStatusText(status: string, jobId: string): string {
@@ -64,7 +45,7 @@ export function createMcpServer(context: ToolContext): McpServer {
 		},
 		{
 			instructions:
-				"Create travel memory books from a cover and up to twenty memories. Each memory accepts one to four HTTPS image URLs."
+				"Create paid travel memory books from a cover and up to nineteen memories. The cover is billable, for a maximum of twenty slides. Each memory accepts one to four HTTPS image URLs."
 		}
 	);
 
@@ -73,18 +54,27 @@ export function createMcpServer(context: ToolContext): McpServer {
 		{
 			title: "Create travel memory deck",
 			description:
-				"Queue a PowerPoint travel memory book with a typography-only cover and one to twenty image-based memories.",
+				"Queue a PowerPoint travel memory book with a typography-only cover and one to nineteen image-based memories. USD₮0 is charged per output slide, including the cover.",
 			inputSchema: CreateDeckInputSchema,
 			outputSchema: CreateDeckOutputSchema,
 			annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
 		},
 		async (request) => {
-			const job = await context.services.jobs.create(context.identity.id, request as DeckRequest);
+			if (!context.paymentId) {
+				return {
+					content: [{ type: "text", text: "A settled payment is required before a deck can be queued." }],
+					isError: true
+				};
+			}
+
+			const deckRequest = request as DeckRequest;
+			const pricing = getDeckPricing(deckRequest);
+			const job = await context.services.jobs.createPaid(context.identity.id, deckRequest, context.paymentId);
 			await context.services.tasks.enqueueGeneration(job.id);
 
 			return {
 				content: [{ type: "text", text: createStatusText(job.status, job.id) }],
-				structuredContent: { jobId: job.id, status: "queued" }
+				structuredContent: { jobId: job.id, status: "queued", ...pricing }
 			};
 		}
 	);

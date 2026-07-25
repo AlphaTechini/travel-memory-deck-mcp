@@ -19,6 +19,7 @@ export type DeckJobStatus = "queued" | "processing" | "completed" | "failed" | "
 export type DeckJob = {
 	id: string;
 	ownerId: string;
+	paymentId?: string;
 	request?: DeckRequest;
 	status: DeckJobStatus;
 	createdAt: Date;
@@ -33,4 +34,19 @@ export type DeckJob = {
 
 export type MarketplaceIdentity = {
 	id: string;
+};
+
+export type PaymentRecord = {
+	id: string;
+	ownerId: string;
+	requestFingerprint: string;
+	slideCount: number;
+	priceUsd: string;
+	network: string;
+	asset: string;
+	amount: string;
+	transaction: string;
+	payer?: string;
+	createdAt: Date;
+	purgeAt: Date;
 };

@@ -9,4 +9,4 @@ To find exact-expiry deletion visit [delete.ts](file:///C:/Hackathons/Slide%20Ma
 
 The MongoDB job connection can be found in [repository.ts](file:///C:/Hackathons/Slide%20Maker/src/jobs/repository.ts). The Cloud Tasks connection can be found in [queue.ts](file:///C:/Hackathons/Slide%20Maker/src/jobs/queue.ts).
 
-Cloud Tasks is used instead of an in-process background task so work survives Cloud Run instance restarts and scaling.
+Cloud Tasks is used instead of an in-process background task so work survives Cloud Run instance restarts and scaling. A job is only claimable when it has a settled payment authorization, so workers never render an unpaid deck.

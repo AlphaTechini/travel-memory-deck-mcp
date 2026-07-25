@@ -8,7 +8,11 @@ This project is an agent-to-MCP service that turns travel memories into a PowerP
 
 - Runtime: Fastify on Cloud Run.
 - Transport: authenticated MCP Streamable HTTP endpoint at `/mcp`.
-- Identity: calls are accepted only through the agent marketplace identity integration. ERC-402 payment support is deferred.
+- Identity: calls are accepted only through the agent marketplace identity integration.
+- Payments: x402 exact payments settle through the OKX facilitator before a paid job is created. Only `create_travel_memory_deck` is paid; MCP initialization, tool listing, and status lookups remain free.
+- Payment network: use USD₮0 on X Layer testnet (`eip155:1952`) first, then X Layer production (`eip155:196`).
+- Pricing: charge 1.5 USD₮0 per output slide, including the typography-only cover. A request therefore contains one cover plus one to nineteen memories, for two to twenty slides and a 3 to 30 USD₮0 total.
+- Payment records: retain the caller binding, a hash of the payment authorization, requested slide count, and final settlement metadata for one year. Do not retain signed payment payloads.
 - Jobs: MongoDB persists job status and ownership. Cloud Tasks invokes the protected generation worker.
 - Storage: a private Google Cloud Storage bucket holds generated decks.
 - Delivery: a V4 signed GCS download URL is valid for 24 hours.
@@ -28,7 +32,7 @@ Returns the caller-owned job state: `queued`, `processing`, `completed`, `failed
 ## Request Contract
 
 - One typography-only cover with a required title and subtext.
-- One to twenty memories per deck.
+- One to nineteen memories per deck, plus the cover, for a twenty-slide maximum.
 - Every memory has a required title, subtext, and one to four HTTPS image URLs.
 - Captions are not accepted because `Detail.md` does not define them.
 - Accepted image formats: JPEG, PNG, and WebP.
@@ -60,12 +64,12 @@ Returns the caller-owned job state: `queued`, `processing`, `completed`, `failed
 
 ## Delivery Flow
 
-1. An authenticated agent calls `create_travel_memory_deck`.
-2. The API validates the request, stores a queued MongoDB job, and creates a Cloud Task.
+1. An authenticated agent calls `create_travel_memory_deck` with a valid x402 payment authorization.
+2. The API verifies and synchronously settles the exact USD₮0 charge, stores minimal payment metadata, then creates a queued MongoDB job and Cloud Task.
 3. The worker claims the job, retrieves and processes images in memory, generates the PPTX, and uploads it to GCS.
 4. The worker stores the signed download URL and expiration in MongoDB, then schedules deletion for 24 hours later.
 5. The calling agent uses `get_travel_memory_deck` until the job is completed and retrieves the temporary URL.
-6. The deletion task removes the GCS object and sensitive request/result fields from MongoDB.
+6. The deletion task removes the GCS object and sensitive request/result fields from MongoDB. Payment ledger entries remain for one year for accounting and retry safety.
 
 ## Implementation Order
 
