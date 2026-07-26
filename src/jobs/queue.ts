@@ -1,12 +1,12 @@
 import { CloudTasksClient } from "@google-cloud/tasks";
 
-import type { AppConfig } from "../config.js";
+import type { TaskQueueConfig } from "../config.js";
 
 export class DeckTaskQueue {
 	private readonly client = new CloudTasksClient();
 	private readonly parent: string;
 
-	constructor(private readonly config: AppConfig) {
+	constructor(private readonly config: TaskQueueConfig) {
 		this.parent = this.client.queuePath(
 			config.GCP_PROJECT_ID,
 			config.CLOUD_TASKS_LOCATION,

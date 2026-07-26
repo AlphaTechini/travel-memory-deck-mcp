@@ -10,7 +10,7 @@ import {
 import { ExactEvmScheme } from "@okxweb3/x402-evm/exact/server";
 import type { FastifyRequest } from "fastify";
 
-import type { AppConfig } from "../config.js";
+import type { ApiConfig } from "../config.js";
 import { parseDeckRequest } from "../mcp/deck-request.js";
 import type { DeckRequest, MarketplaceIdentity, PaymentRecord } from "../types.js";
 import { PaymentLedger } from "./ledger.js";
@@ -86,7 +86,7 @@ export class X402PaymentService {
 	private readonly httpServer: x402HTTPResourceServer;
 
 	constructor(
-		private readonly config: AppConfig,
+		private readonly config: ApiConfig,
 		private readonly ledger: PaymentLedger
 	) {
 		const facilitator = new OKXFacilitatorClient({

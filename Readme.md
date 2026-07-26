@@ -24,7 +24,7 @@ The Google Cloud Storage connection can be found in [src/storage/decks.ts](file:
 
 Deploy the API and worker as separate Cloud Run services from the same image. The API uses the default `node dist/server.js` command. The worker uses `node dist/worker.js` and must not grant public invocation.
 
-Set all values from [.env.example](file:///C:/Hackathons/Slide%20Maker/.env.example) through Cloud Run secrets or environment configuration. Store `OKX_API_KEY`, `OKX_SECRET_KEY`, and `OKX_PASSPHRASE` in Cloud Run secrets. Do not place production credentials in a file or source control.
+Set shared infrastructure values from [.env.example](file:///C:/Hackathons/Slide%20Maker/.env.example) on both Cloud Run services. Set `MCP_PUBLIC_BASE_URL`, `X402_NETWORK`, `X402_PAY_TO_ADDRESS`, and the OKX credentials only on the API service. The worker requires MongoDB, GCS, Cloud Tasks, and worker URL settings but does not require payment configuration. Store production credentials in Cloud Run secrets and do not place them in a file or source control.
 
 The service account needs minimum permissions for the selected GCS bucket and Cloud Tasks queue. The worker service account needs GCS object create, read, and delete permissions. The API service account needs Cloud Tasks enqueue permission. Cloud Tasks must invoke the worker using its configured OIDC service account.
 

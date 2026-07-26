@@ -1,6 +1,6 @@
 import { Storage } from "@google-cloud/storage";
 
-import type { AppConfig } from "../config.js";
+import type { StorageConfig } from "../config.js";
 
 const PPTX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
 
@@ -8,7 +8,7 @@ export class DeckStorage {
 	private readonly storage = new Storage();
 	private readonly bucket;
 
-	constructor(config: AppConfig) {
+	constructor(config: StorageConfig) {
 		this.bucket = this.storage.bucket(config.GCS_BUCKET);
 	}
 

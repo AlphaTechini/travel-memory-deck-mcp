@@ -1,9 +1,9 @@
-import { loadConfig } from "./config.js";
-import { createServices } from "./services.js";
+import { loadWorkerConfig } from "./config.js";
+import { createWorkerServices } from "./services.js";
 import { createWorkerApp } from "./worker-app.js";
 
-const config = loadConfig();
-const services = await createServices(config);
+const config = loadWorkerConfig();
+const services = await createWorkerServices(config);
 const app = createWorkerApp(services);
 
 const close = async (): Promise<void> => {

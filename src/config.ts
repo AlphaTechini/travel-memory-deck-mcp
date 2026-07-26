@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const EnvironmentSchema = z.object({
+const CommonEnvironmentSchema = z.object({
 	NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
 	PORT: z.coerce.number().int().min(1).max(65_535).default(8080),
 	MONGODB_URI: z.url(),
@@ -13,7 +13,10 @@ const EnvironmentSchema = z.object({
 	CLOUD_TASKS_LOCATION: z.string().min(1),
 	CLOUD_TASKS_QUEUE: z.string().min(1),
 	CLOUD_TASKS_SERVICE_ACCOUNT_EMAIL: z.email(),
-	WORKER_BASE_URL: z.url(),
+	WORKER_BASE_URL: z.url()
+});
+
+const ApiEnvironmentSchema = CommonEnvironmentSchema.extend({
 	MCP_PUBLIC_BASE_URL: z.url(),
 	X402_NETWORK: z.enum(["eip155:1952", "eip155:196"]),
 	X402_PAY_TO_ADDRESS: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
@@ -22,10 +25,26 @@ const EnvironmentSchema = z.object({
 	OKX_PASSPHRASE: z.string().min(1)
 });
 
-export type AppConfig = z.output<typeof EnvironmentSchema>;
+const WorkerEnvironmentSchema = CommonEnvironmentSchema;
 
-export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppConfig {
-	const parsed = EnvironmentSchema.parse(environment);
+export type CommonConfig = z.output<typeof CommonEnvironmentSchema>;
+export type ApiConfig = z.output<typeof ApiEnvironmentSchema>;
+export type WorkerConfig = z.output<typeof WorkerEnvironmentSchema>;
 
-	return parsed;
+export type StorageConfig = Pick<CommonConfig, "GCS_BUCKET">;
+export type TaskQueueConfig = Pick<
+	CommonConfig,
+		| "GCP_PROJECT_ID"
+		| "CLOUD_TASKS_LOCATION"
+		| "CLOUD_TASKS_QUEUE"
+		| "CLOUD_TASKS_SERVICE_ACCOUNT_EMAIL"
+		| "WORKER_BASE_URL"
+>;
+
+export function loadApiConfig(environment: NodeJS.ProcessEnv = process.env): ApiConfig {
+	return ApiEnvironmentSchema.parse(environment);
+}
+
+export function loadWorkerConfig(environment: NodeJS.ProcessEnv = process.env): WorkerConfig {
+	return WorkerEnvironmentSchema.parse(environment);
 }

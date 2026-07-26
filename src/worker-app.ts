@@ -3,11 +3,11 @@ import { z } from "zod";
 
 import { deleteDeckJob } from "./jobs/delete.js";
 import { generateDeckJob } from "./jobs/generate.js";
-import type { AppServices } from "./services.js";
+import type { WorkerServices } from "./services.js";
 
 const JobPayloadSchema = z.object({ jobId: z.string().uuid() }).strict();
 
-export function createWorkerApp(services: AppServices): FastifyInstance {
+export function createWorkerApp(services: WorkerServices): FastifyInstance {
 	const app = Fastify({ logger: true, bodyLimit: 10_000 });
 
 	app.get("/health", async () => ({ status: "ok" }));

@@ -1,9 +1,9 @@
 import { createApp } from "./app.js";
-import { loadConfig } from "./config.js";
-import { createServices } from "./services.js";
+import { loadApiConfig } from "./config.js";
+import { createApiServices } from "./services.js";
 
-const config = loadConfig();
-const services = await createServices(config);
+const config = loadApiConfig();
+const services = await createApiServices(config);
 const app = createApp(config, services);
 
 const close = async (): Promise<void> => {

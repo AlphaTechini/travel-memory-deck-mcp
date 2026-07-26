@@ -18,3 +18,4 @@
 - The API must wait for final synchronous settlement before it creates or enqueues a deck job. A facilitator result with `pending` status does not authorize work.
 - Payment records retain a hash of the payment authorization, caller binding, request fingerprint, price, and final settlement metadata for one year. The signed payment payload is not retained.
 - The x402 `payTo` address and OKX Developer Portal credentials are runtime configuration only. They must be supplied through Cloud Run configuration and secrets.
+- API and worker configuration are separate. The worker requires MongoDB, GCS, Cloud Tasks, and worker routing settings, but does not require x402 or OKX credentials.

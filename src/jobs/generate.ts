@@ -1,7 +1,7 @@
 import { ImageFetchError } from "../images/fetch.js";
 import { ImageProcessingError } from "../images/rounded-image.js";
 import { createPresentation } from "../presentation/render.js";
-import type { AppServices } from "../services.js";
+import type { WorkerServices } from "../services.js";
 
 const DECK_RETENTION_MS = 24 * 60 * 60 * 1000;
 
@@ -12,7 +12,7 @@ function createFailureMessage(error: unknown): string {
 	return "The deck could not be rendered from the submitted memory data.";
 }
 
-export async function generateDeckJob(jobId: string, services: AppServices): Promise<void> {
+export async function generateDeckJob(jobId: string, services: WorkerServices): Promise<void> {
 	const job = await services.jobs.claim(jobId);
 	if (!job || !job.request || !job.paymentId) {
 		return;

@@ -1,6 +1,6 @@
-import type { AppServices } from "../services.js";
+import type { WorkerServices } from "../services.js";
 
-export async function deleteDeckJob(jobId: string, services: AppServices): Promise<void> {
+export async function deleteDeckJob(jobId: string, services: WorkerServices): Promise<void> {
 	const job = await services.jobs.findForDeletion(jobId);
 	if (!job || !job.objectKey) {
 		return;

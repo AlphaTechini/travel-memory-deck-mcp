@@ -3,7 +3,7 @@ import Fastify from "fastify";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 
 import { MarketplaceIdentityNotConfiguredError, requireMarketplaceIdentity } from "./auth/marketplace-identity.js";
-import type { AppConfig } from "./config.js";
+import type { ApiConfig } from "./config.js";
 import { parseDeckRequest } from "./mcp/deck-request.js";
 import { createMcpServer } from "./mcp/tools.js";
 import {
@@ -14,7 +14,7 @@ import {
 import type { AppServices } from "./services.js";
 import type { DeckRequest } from "./types.js";
 
-export function createApp(config: AppConfig, services: AppServices): FastifyInstance {
+export function createApp(config: ApiConfig, services: AppServices): FastifyInstance {
 	const app = Fastify({
 		logger: true,
 		bodyLimit: 1_000_000
